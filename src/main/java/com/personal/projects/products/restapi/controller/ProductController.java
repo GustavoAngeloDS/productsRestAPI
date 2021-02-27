@@ -1,9 +1,11 @@
-package com.personal.projects.products.restapi.resources;
+package com.personal.projects.products.restapi.controller;
 
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +26,7 @@ import io.swagger.annotations.ApiOperation;
 @RequestMapping(value="/api")
 @Api(value="API Rest - Products")
 @CrossOrigin(origins="*")
-public class ProductResource {
+public class ProductController {
 	
 	@Autowired
 	ProductRepository productRepository;
@@ -37,8 +39,13 @@ public class ProductResource {
 	
 	@GetMapping("/products/{id}")
 	@ApiOperation(value="Return a specific product")
-	public Optional<Product> findById(@PathVariable(value="id") long id) {
-		return productRepository.findById(id);
+	public ResponseEntity<Product> findById(@PathVariable(value="id") long id) {
+		Optional<Product> product = productRepository.findById(id);
+		
+		if(product.isPresent())
+			return new ResponseEntity<Product>(product.get(), HttpStatus.OK);
+		else
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 	
 	@PostMapping("/products")
@@ -49,13 +56,26 @@ public class ProductResource {
 	
 	@DeleteMapping("/products")
 	@ApiOperation(value="Delete a product")
-	public void deleteProduct(@RequestBody Product product) {
-		productRepository.delete(product);
+	public ResponseEntity<Product> deleteProduct(@RequestBody Product product) {
+		Optional<Product> productToDelete = productRepository.findById(product.getId());
+		
+		if(productToDelete.isPresent()) {
+			productRepository.delete(product);
+			return new ResponseEntity<>(HttpStatus.OK);
+		}
+		else
+			return new ResponseEntity<Product>(HttpStatus.NOT_FOUND);
 	}
 	
 	@PutMapping("/products")
 	@ApiOperation(value="Update a product")
-	public Product updateProduct(@RequestBody Product product) {
-		return productRepository.save(product);
+	public ResponseEntity<Product> updateProduct(@RequestBody Product product) {
+		Optional<Product> oldProduct = productRepository.findById(product.getId());
+		if(oldProduct.isPresent()) {
+			productRepository.save(product);
+			return new ResponseEntity<Product>(product, HttpStatus.OK);
+		}
+		else
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 }
